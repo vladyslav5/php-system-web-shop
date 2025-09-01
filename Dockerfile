@@ -9,14 +9,14 @@ RUN apk update && apk add \
     shadow \
     libpq-dev
 
-RUN docker-php-ext-configure pgsql --with-pgsql=/usr/local/pgsql && \
-    docker-php-ext-install pdo pdo_pgsql pgsql
+RUN docker-php-ext-install pdo pdo_pgsql pgsql
 
-WORKDIR /var/www
+WORKDIR /var/www/html
 
-COPY . /var/www
+COPY . /var/www/html
 
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install  --optimize-autoloader
+
 
