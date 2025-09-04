@@ -6,6 +6,7 @@ use App\Repository\OrderStatusRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Ignore;
 
 #[ORM\Entity(repositoryClass: OrderStatusRepository::class)]
 class OrderStatus
@@ -22,6 +23,7 @@ class OrderStatus
      * @var Collection<int, Order>
      */
     #[ORM\OneToMany(targetEntity: Order::class, mappedBy: 'status')]
+    #[Ignore]
     private Collection $orders;
 
     public function __construct()

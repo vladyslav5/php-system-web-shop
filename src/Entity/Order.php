@@ -38,7 +38,7 @@ class Order
     /**
      * @var Collection<int, OrderItem>
      */
-    #[ORM\OneToMany(targetEntity: OrderItem::class, mappedBy: 'orderId', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: OrderItem::class, mappedBy: 'order', orphanRemoval: true)]
     private Collection $orderItems;
 
     public function __construct()
@@ -135,7 +135,7 @@ class Order
     {
         if (!$this->orderItems->contains($orderItem)) {
             $this->orderItems->add($orderItem);
-            $orderItem->setOrderId($this);
+            $orderItem->setOrder($this);
         }
 
         return $this;
@@ -145,8 +145,8 @@ class Order
     {
         if ($this->orderItems->removeElement($orderItem)) {
             // set the owning side to null (unless already changed)
-            if ($orderItem->getOrderId() === $this) {
-                $orderItem->setOrderId(null);
+            if ($orderItem->getOrder() === $this) {
+                $orderItem->setOrder(null);
             }
         }
 
