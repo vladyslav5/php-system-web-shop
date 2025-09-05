@@ -6,9 +6,11 @@ use App\Entity\Order;
 use App\Entity\OrderStatus;
 use App\Repository\OrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 
@@ -16,13 +18,51 @@ use Symfony\Component\Serializer\SerializerInterface;
 final class OrderController extends AbstractController
 {
     #[Route('', name: 'index', methods: ['GET'])]
-    public function index(EntityManagerInterface $em, SerializerInterface $serializer): JsonResponse
+    public function index(
+        EntityManagerInterface                   $em,
+//        SerializerInterface                      $serializer,
+        #[MapQueryParameter] int                 $page = 1,
+        #[MapQueryParameter] int                 $limit = 4,
+        #[MapQueryParameter] ?string             $status = null,
+        #[MapQueryParameter('date_from')] string $dateFrom = null,
+        #[MapQueryParameter('date_to')] string   $dateTo = null,
+        #[MapQueryParameter] ?string             $email = null
+    ): JsonResponse
     {
-        $data = $em->getRepository(Order::class)->findAll();
+        $query = $em->getRepository(Order::class)
+            ->createQueryBuilder('o')
+            ->orderBy('o.id');
+        if ($status) {
+            $query->andWhere('o.status = :status')
+                ->setParameter('status', $status);
+        }
+        if ($email) {
+            $query->andWhere('o.customerEmail = :email')
+                ->setParameter('email', $email);
+        }
+        if ($dateFrom !== null) {
+            $query->andWhere('o.createdAt >= :dateFrom')
+                ->setParameter('dateFrom', $dateFrom);
+        }
 
-        return $this->json(
-            $data,
-        );
+        if ($dateTo !== null) {
+            $query->andWhere('o.createdAt <= :dateTo')
+                ->setParameter('dateTo', $dateTo);
+        }
+        $paginator = new Paginator($query);
+
+        $paginator->getQuery()
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+        $totalItems = $paginator->count();
+        $lastPage = (int)ceil($totalItems / $limit);
+        return $this->json([
+            'data' => $paginator,
+            "totalItems" => $totalItems,
+            "currentPage" => $page,
+            "limit" => $limit,
+            "lastPage" => $lastPage,
+        ]);
     }
 
     #[Route('/{id}', name: 'show', methods: ['GET'])]
@@ -87,7 +127,7 @@ final class OrderController extends AbstractController
     }
 
     #[Route('/{id}/status', name: 'update_status', methods: ['PATCH'])]
-    public function updateStatus(EntityManagerInterface $em,Order $order, Request $request, SerializerInterface $serialize): JsonResponse
+    public function updateStatus(EntityManagerInterface $em, Order $order, Request $request, SerializerInterface $serialize): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
         if (!isset($data['statusId'])) {
@@ -102,7 +142,7 @@ final class OrderController extends AbstractController
 
         $order->setStatus($newStatus);
         $order->setUpdatedAt(new \DateTimeImmutable());
-
+        $em->flush();
         return $this->json(
             $order
         );
