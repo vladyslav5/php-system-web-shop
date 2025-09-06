@@ -20,6 +20,8 @@ use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\ObjectMapper\ObjectMapperInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 
 #[Route('/orders', name: 'order_')]
@@ -33,7 +35,7 @@ final class OrderController extends AbstractController
         #[MapQueryParameter] ?string                                                       $status = null,
         #[MapQueryParameter('date_from')] string                                           $dateFrom = null,
         #[MapQueryParameter('date_to')] string                                             $dateTo = null,
-        #[MapQueryParameter(filter: FILTER_VALIDATE_EMAIL)] ?string                                             $email = null,
+        #[MapQueryParameter(filter: FILTER_VALIDATE_EMAIL)] ?string                        $email = null,
     ): JsonResponse
     {
         $orders = $em->getRepository(Order::class)->findOrdersWithFilters($page, $limit, $status, $email, $dateFrom, $dateTo);
@@ -54,7 +56,8 @@ final class OrderController extends AbstractController
     public function store(EntityManagerInterface                                                      $em,
                           #[MapRequestPayload(validationFailedStatusCode: 400)] CreateOrderRequestDto $data,
                           ObjectMapperInterface                                                       $objectMapper,
-                          SerializerInterface                                                         $serializer
+                          SerializerInterface                                                         $serializer,
+                          ValidatorInterface                                                          $validator
     ): JsonResponse
     {
         $pendingStatus = $em->getRepository(OrderStatus::class)->findOneBy(['name' => 'pending']);
@@ -67,8 +70,14 @@ final class OrderController extends AbstractController
 
         $objectMapper->map($data, $order);
         $orderItems = [];
+
         foreach ($data->getOrderItems() as $itemData) {
-            $orderItems[] = $serializer->denormalize($itemData, OrderItemDTO::class);
+            $itemDto = $serializer->denormalize($itemData, OrderItemDTO::class);
+            $errors = $validator->validate($itemDto);
+            if (count($errors) > 0) {
+                throw new ValidationFailedException($itemDto, $errors);
+            }
+            $orderItems[] = $itemDto;
         }
 
         foreach ($orderItems as $itemDto) {
@@ -89,6 +98,7 @@ final class OrderController extends AbstractController
                            EntityManagerInterface                                                      $em,
                            SerializerInterface                                                         $serializer,
                            ObjectMapperInterface                                                       $objectMapper,
+                           ValidatorInterface                                                          $validator
     ): JsonResponse
     {
 //        dd($order->getStatus()->getName());
@@ -105,6 +115,11 @@ final class OrderController extends AbstractController
                 continue;
             }
             $itemDto = $serializer->denormalize($itemOrder, OrderItemDTO::class);
+            $errors = $validator->validate($itemDto);
+
+            if (count($errors) > 0) {
+                throw new ValidationFailedException($itemDto, $errors);
+            }
 //            $serializer->denormalize($itemOrder, OrderItem::class,"",['object_to_populate' => $item]);
             $objectMapper->map($itemDto, $item);
             $em->persist($item);
