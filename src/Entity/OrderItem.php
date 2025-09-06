@@ -4,11 +4,13 @@ namespace App\Entity;
 
 use App\Repository\OrderItemRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\ObjectMapper\Attribute\Map;
 use Symfony\Component\Serializer\Annotation\Ignore;
 
 #[ORM\Entity(repositoryClass: OrderItemRepository::class)]
 class OrderItem
 {
+    #[Map(if: false)]
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -26,6 +28,7 @@ class OrderItem
     #[ORM\ManyToOne(inversedBy: 'orderItems')]
     #[ORM\JoinColumn(name: "order_id", referencedColumnName: "id", nullable: false)]
     #[Ignore]
+    #[Map(if: false)]
     private ?Order $order = null;
 
     public function getId(): ?int

@@ -6,6 +6,7 @@ use App\Repository\OrderRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\ObjectMapper\Attribute\Map;
 
 #[ORM\Entity(repositoryClass: OrderRepository::class)]
 #[ORM\Table(name: '`order`')]
@@ -14,6 +15,7 @@ class Order
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Map(if: false)]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
@@ -23,14 +25,18 @@ class Order
     private ?string $customerEmail = null;
 
     #[ORM\Column]
-    private ?int $totalAmount = null;
+    #[Map(if: false)]
+    private ?float $totalAmount = null;
 
     #[ORM\Column]
+    #[Map(if: false)]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column]
+    #[Map(if: false)]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[Map(if: false)]
     #[ORM\ManyToOne(inversedBy: 'orders')]
     #[ORM\JoinColumn(nullable: false)]
     private ?OrderStatus $status = null;
