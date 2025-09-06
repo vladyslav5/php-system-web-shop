@@ -1,10 +1,11 @@
 <?php
 
 namespace App\Message;
-class EmailNotification
+readonly class EmailNotification
 {
     public function __construct(
-        private readonly int $orderId,
+        private int           $orderId,
+        private EmailTypeEnum $type
     )
     {
 
@@ -13,6 +14,11 @@ class EmailNotification
     public function getOrderId(): int
     {
         return $this->orderId;
+    }
+
+    public function getType(): EmailTypeEnum
+    {
+        return $this->type;
     }
 
 
