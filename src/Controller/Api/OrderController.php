@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\ObjectMapper\ObjectMapperInterface;
 use Symfony\Component\Routing\Attribute\Route;
@@ -37,6 +38,9 @@ final class OrderController extends AbstractController
         #[MapQueryParameter(filter: FILTER_VALIDATE_EMAIL)] ?string                        $email = null,
     ): JsonResponse
     {
+        $this->validateDate($dateTo);
+        $this->validateDate($dateFrom);
+
         $orders = $em->getRepository(Order::class)->findOrdersWithFilters($page, $limit, $status, $email, $dateFrom, $dateTo);
         return $this->json(
             $orders
@@ -88,7 +92,7 @@ final class OrderController extends AbstractController
 
         $em->persist($order);
         $em->flush();
-        return $this->json($order,201);
+        return $this->json($order, 201);
     }
 
     #[Route('/{id}', name: 'update', methods: ['PUT'])]
@@ -161,4 +165,19 @@ final class OrderController extends AbstractController
             $order
         );
     }
+
+    public function validateDate(string $date = null): ?\DateTime
+    {
+        if (!$date) {
+            return null;
+        }
+
+        $dt = \DateTime::createFromFormat('Y-m-d', $date);
+
+        if (!$dt || $dt->format('Y-m-d') !== $date) {
+            throw new BadRequestHttpException("Date must be in Y-m-d format: $date");
+        }
+        return $dt;
+    }
+
 }
