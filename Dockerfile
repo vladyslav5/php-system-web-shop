@@ -1,4 +1,4 @@
-FROM php:8.2-fpm-alpine
+FROM php:8.3-fpm-alpine
 
 RUN apk update && apk add \
     curl \
@@ -17,6 +17,4 @@ COPY . /var/www/html
 
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
-RUN composer install  --optimize-autoloader
-
-
+RUN composer install --optimize-autoloader --dev
