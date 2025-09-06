@@ -6,8 +6,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class OrderItemDto
 {
-
-
     #[Assert\NotBlank]
     private string $productName;
 
@@ -16,6 +14,7 @@ class OrderItemDto
     private int $quantity;
 
     #[Assert\NotBlank]
+    #[Assert\Positive]
     #[Assert\GreaterThan(0)]
     private float $price;
 
