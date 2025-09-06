@@ -9,6 +9,7 @@ use App\Dto\ViewOrderDto;
 use App\Entity\Order;
 use App\Entity\OrderItem;
 use App\Entity\OrderStatus;
+use App\Message\EmailNotification;
 use App\Repository\OrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\Pagination\Paginator;
@@ -17,6 +18,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\ObjectMapper\ObjectMapperInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
@@ -57,7 +59,8 @@ final class OrderController extends AbstractController
                           #[MapRequestPayload(validationFailedStatusCode: 400)] CreateOrderRequestDto $data,
                           ObjectMapperInterface                                                       $objectMapper,
                           SerializerInterface                                                         $serializer,
-                          ValidatorInterface                                                          $validator
+                          ValidatorInterface                                                          $validator,
+                          MessageBusInterface                                                         $bus
     ): JsonResponse
     {
         $pendingStatus = $em->getRepository(OrderStatus::class)->findOneBy(['name' => 'pending']);
@@ -88,7 +91,9 @@ final class OrderController extends AbstractController
 
         $em->persist($order);
         $em->flush();
-
+        $bus->dispatch(new EmailNotification(
+            1
+        ));
         return $this->json($order);
     }
 
@@ -139,6 +144,7 @@ final class OrderController extends AbstractController
         return $this->json([
         ]);
     }
+
 
     #[Route('/{id}/status', name: 'update_status', methods: ['PATCH'])]
     public function updateStatus(EntityManagerInterface $em, Order $order, Request $request, SerializerInterface $serialize): JsonResponse
