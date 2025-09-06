@@ -88,7 +88,7 @@ final class OrderController extends AbstractController
 
         $em->persist($order);
         $em->flush();
-        return $this->json($order);
+        return $this->json($order,201);
     }
 
     #[Route('/{id}', name: 'update', methods: ['PUT'])]
