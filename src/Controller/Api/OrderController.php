@@ -9,6 +9,7 @@ use App\Dto\ViewOrderDto;
 use App\Entity\Order;
 use App\Entity\OrderItem;
 use App\Entity\OrderStatus;
+use App\Repository\OrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -32,43 +33,13 @@ final class OrderController extends AbstractController
         #[MapQueryParameter] ?string                                                       $status = null,
         #[MapQueryParameter('date_from')] string                                           $dateFrom = null,
         #[MapQueryParameter('date_to')] string                                             $dateTo = null,
-        #[MapQueryParameter] ?string                                                       $email = null
+        #[MapQueryParameter(filter: FILTER_VALIDATE_EMAIL)] ?string                                             $email = null,
     ): JsonResponse
     {
-        $query = $em->getRepository(Order::class)
-            ->createQueryBuilder('o')
-            ->orderBy('o.id');
-        if ($status) {
-            $query->andWhere('o.status = :status')
-                ->setParameter('status', $status);
-        }
-        if ($email) {
-            $query->andWhere('o.customerEmail = :email')
-                ->setParameter('email', $email);
-        }
-        if ($dateFrom !== null) {
-            $query->andWhere('o.createdAt >= :dateFrom')
-                ->setParameter('dateFrom', $dateFrom);
-        }
-
-        if ($dateTo !== null) {
-            $query->andWhere('o.createdAt <= :dateTo')
-                ->setParameter('dateTo', $dateTo);
-        }
-        $paginator = new Paginator($query);
-
-        $paginator->getQuery()
-            ->setFirstResult(($page - 1) * $limit)
-            ->setMaxResults($limit);
-        $totalItems = $paginator->count();
-        $lastPage = (int)ceil($totalItems / $limit);
-        return $this->json([
-            'data' => $paginator,
-            "totalItems" => $totalItems,
-            "currentPage" => $page,
-            "limit" => $limit,
-            "lastPage" => $lastPage,
-        ]);
+        $orders = $em->getRepository(Order::class)->findOrdersWithFilters($page, $limit, $status, $email, $dateFrom, $dateTo);
+        return $this->json(
+            $orders
+        );
     }
 
     #[Route('/{id}', name: 'show', methods: ['GET'])]
