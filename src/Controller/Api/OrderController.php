@@ -9,10 +9,7 @@ use App\Dto\ViewOrderDto;
 use App\Entity\Order;
 use App\Entity\OrderItem;
 use App\Entity\OrderStatus;
-use App\Message\EmailNotification;
-use App\Repository\OrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\Pagination\Paginator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -91,9 +88,6 @@ final class OrderController extends AbstractController
 
         $em->persist($order);
         $em->flush();
-        $bus->dispatch(new EmailNotification(
-            1
-        ));
         return $this->json($order);
     }
 
